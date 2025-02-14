@@ -1,2 +1,2 @@
-PyQt5==5.15.11
-Pillow==9.2.0
+requests
+PySide6

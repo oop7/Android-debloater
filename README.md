@@ -11,7 +11,7 @@ A fast, modern desktop app to discover, research, uninstall, and restore Android
 - Right‑click any package to search the web for info
 - Update checker (GitHub latest)
 - Windows: no flashing console windows during ADB calls
-- Bundled platform‑tools (ADB) — no PATH setup
+- Bundled platform‑tools (ADB) — no PATH setup only for windows, you will need to add it manually in linux and macos
 
 ## Install
 - Windows: download `.exe` or `.msi` from Releases and install.

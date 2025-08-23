@@ -50,8 +50,6 @@ pnpm-debug.log*
 **/*.d
 **/*.dSYM
 **/*.pdb
-**/*.exe
-**/*.dll
 **/*.lib
 
 # Tauri/Windows installer outputs (do not commit installers)

@@ -60,11 +60,11 @@ jobs:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: npm run tauri:build
-    - name: Zip macOS .app bundle
+      - name: Zip macOS .app bundle
         if: runner.os == 'macOS'
         run: |
           set -e
-      APP_DIR=$(ls -d src-tauri/target/release/bundle/macos/*.app 2>/dev/null | head -n 1 || true)
+          APP_DIR=$(ls -d src-tauri/target/release/bundle/macos/*.app 2>/dev/null | head -n 1 || true)
           if [ -n "$APP_DIR" ]; then
             ZIP_PATH="${APP_DIR}.zip"
             # Use ditto to preserve macOS bundle metadata

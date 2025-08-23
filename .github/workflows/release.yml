@@ -18,16 +18,25 @@ jobs:
           - os: macos-latest
             target: macos
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: New-Android-debloater
     steps:
       - uses: actions/checkout@v4
+      - name: Detect app directory
+        id: detect
+        shell: bash
+        run: |
+          if [ -f src-tauri/Cargo.toml ] && [ -f package.json ]; then
+            echo "APP_DIR=." >> "$GITHUB_ENV"
+          elif [ -f New-Android-debloater/src-tauri/Cargo.toml ] && [ -f New-Android-debloater/package.json ]; then
+            echo "APP_DIR=New-Android-debloater" >> "$GITHUB_ENV"
+          else
+            echo "Could not find Tauri app (src-tauri/Cargo.toml)" >&2
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: New-Android-debloater/package-lock.json
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
       - name: Install Linux deps (Tauri)
         if: runner.os == 'Linux'
         run: |
@@ -49,27 +58,29 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            New-Android-debloater/src-tauri
+            ${{ env.APP_DIR }}/src-tauri
       - name: Install Windows deps (NSIS & WiX)
         if: runner.os == 'Windows'
         run: choco install -y nsis wixtoolset
       - name: Install JS deps
+        working-directory: ${{ env.APP_DIR }}
         run: npm ci
       - name: Build app bundles with Tauri
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        working-directory: ${{ env.APP_DIR }}
         run: npm run tauri:build
       - name: Zip macOS .app bundle
         if: runner.os == 'macOS'
         run: |
           set -e
-          APP_DIR=$(ls -d src-tauri/target/release/bundle/macos/*.app 2>/dev/null | head -n 1 || true)
-          if [ -n "$APP_DIR" ]; then
-            ZIP_PATH="${APP_DIR}.zip"
+          APP=$(ls -d $APP_DIR/src-tauri/target/release/bundle/macos/*.app 2>/dev/null | head -n 1 || true)
+          if [ -n "$APP" ]; then
+            ZIP_PATH="${APP}.zip"
             # Use ditto to preserve macOS bundle metadata
-            ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$ZIP_PATH"
-            echo "Zipped $APP_DIR -> $ZIP_PATH"
+            ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP_PATH"
+            echo "Zipped $APP -> $ZIP_PATH"
           else
             echo "No .app bundle found to zip"
           fi
@@ -78,13 +89,13 @@ jobs:
         with:
           name: app-bundles-${{ matrix.target }}
           path: |
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.rpm
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.app.zip
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.exe
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.msi
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.deb
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.rpm
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.AppImage
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.dmg
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.app.zip
 
   release:
     name: Create GitHub Release (draft)

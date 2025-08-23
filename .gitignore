@@ -1,0 +1,138 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/Cargo.lock
+.DS_Store
+*.log
+# ==========================
+# Root .gitignore for rust-hash-sum
+# Purpose: ignore build artifacts, generated files, OS/IDE cruft, and potential secrets.
+# Keep source files, configs and lockfiles committed.
+# ==========================
+
+# ---- Node / frontend ----
+node_modules/
+/.pnp/
+/.pnp.js
+/dist/
+/.vite/
+/build/
+/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+
+# Vite cache
+.vite/
+
+# Optional lockfiles (keep if you want deterministic installs)
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# ---- Rust / Tauri ----
+# Cargo build artifacts
+/target/
+**/target/
+# Tauri packaging bundles and intermediate outputs
+/src-tauri/target/
+/src-tauri/target/**/bundle/
+/src-tauri/target/**/wix/**
+/src-tauri/target/**/nsis/**
+/src-tauri/target/**/msi/**
+/src-tauri/target/**/bundle/**
+
+# Rust incremental and debug files
+**/*.rmeta
+**/*.rlib
+**/*.d
+**/*.dSYM
+**/*.pdb
+**/*.exe
+**/*.dll
+**/*.lib
+
+# Tauri/Windows installer outputs (do not commit installers)
+**/*.msi
+**/*-setup.exe
+**/*.appx
+**/*.msix
+
+# ---- Editors / IDEs ----
+.vscode/
+.vscode/**
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# ---- OS files ----
+Thumbs.db
+.DS_Store
+ehthumbs.db
+
+# ---- Secrets / env ----
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.asc
+*.crt
+*.csr
+*.der
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Coverage, test artifacts
+coverage/
+coverage-reports/
+*.lcov
+.nyc_output/
+
+# Misc
+*.zip
+*.tar.gz
+*.7z
+*.bak
+*.tmp
+*.temp
+
+# Mac/Linux local files
+*.local
+
+# JetBrains
+out/
+.idea/
+*.iml
+
+# Windows build artifacts
+**/build/
+
+# Ignore VS Code workspace storage (optional)
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# GitHub Actions cache (optional)
+.github/workflows/.cache/
+
+# Keep these files tracked:
+# - Cargo.toml, Cargo.lock (for apps) — do not ignore by default
+# - package.json, tsconfig.json, vite.config.ts
+# - src/ and src-tauri/src/ (your source)
+# - README.md, LICENSE
+
+# If you have any generated docs add them below (e.g. docs/)
+
+# End of .gitignore

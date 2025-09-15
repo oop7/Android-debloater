@@ -1,80 +1,162 @@
-# Android Debloater (Tauri + Rust + React)
+# Android Debloater
 
-A fast, modern desktop app to discover, research, uninstall, and restore Android apps — with ADB bundled for you.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub release](https://img.shields.io/github/release/oop7/Android-debloater.svg)](https://github.com/oop7/Android-debloater/releases)
 
-## Highlights
-- Device discovery and connection status
-- Scan installed packages and filter with live search
-- Batch uninstall (with confirmation)
-- Automatic APK backup before every uninstall
-- One‑click restore from the default backups folder (modal picker)
-- Right‑click any package to search the web for info
-- Update checker (GitHub latest)
-- Windows: no flashing console windows during ADB calls
-- Bundled platform‑tools (ADB) — no PATH setup only for windows, you will need to add it manually in linux and macos
+A fast, modern desktop app to discover, research, uninstall, and restore Android apps — with ADB bundled for you. Built with Tauri, Rust, and React.
 
-## Install
-- Windows: download `.exe` or `.msi` from Releases and install.
-- macOS/Linux: build from source (or use CI artifacts when available).
+## Table of Contents
 
-## Quick start
-1) On your phone, enable Developer options and turn on USB debugging.
-2) Connect the phone via USB and allow the PC when prompted.
-3) Open the app → “Scan for Installed Packages”.
-4) Use the search bar to filter, select apps, then “Uninstall Selected”.
-5) To restore later: “Restore from Backup” → pick the app from the list.
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Backups](#backups)
+- [Building from Source](#building-from-source)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Disclaimer](#disclaimer)
+
+## Features
+
+- 🔍 **Device Discovery**: Automatically detect and connect to Android devices
+- 📱 **Package Scanning**: Scan installed packages with live search and filtering
+- 🗑️ **Batch Uninstall**: Uninstall multiple apps at once with confirmation
+- 💾 **Automatic Backups**: Create APK backups before every uninstall
+- 🔄 **One-Click Restore**: Restore apps from backups with a modal picker
+- 🌐 **Web Search**: Right-click any package to search for information online
+- 🔄 **Update Checker**: Check for app updates from GitHub releases
+- 🚀 **Cross-Platform**: Windows, macOS, and Linux support
+- 📦 **Bundled ADB**: Platform-tools included, no manual PATH setup required
+
+## Installation
+
+### Windows
+Download the latest installer from the [Releases](https://github.com/oop7/Android-debloater/releases) page:
+- `Android.Debloater_x64-setup.exe` - EXE installer
+- `Android.Debloater_x64_en-US.msi` - MSI installer
+
+### macOS
+Download from the [Releases](https://github.com/oop7/Android-debloater/releases) page:
+- `Android.Debloater.app.zip` - Universal app bundle
+- `Android.Debloater_aarch64.dmg` - ARM64 DMG (for Apple Silicon)
+
+### Linux
+Download from the [Releases](https://github.com/oop7/Android-debloater/releases) page:
+- `android-debloater_amd64.deb` - Debian/Ubuntu package
+- `android-debloater_x86_64.rpm` - RPM package
+- `android-debloater_amd64.AppImage` - AppImage (universal)
+
+**Verify downloads**: Check `SHA256SUMS.txt` for file integrity.
+
+### Build from Source
+If you prefer to build from source or no pre-built binaries are available for your platform:
+
+## Quick Start
+
+1. **Enable Developer Options** on your Android device:
+   - Go to Settings > About Phone > Tap "Build Number" 7 times
+   - Return to Settings > Developer Options > Enable "USB Debugging"
+
+2. **Connect your device** via USB and allow the PC when prompted.
+
+3. **Open the app** and click "Scan for Installed Packages".
+
+4. **Filter and select apps** using the search bar, then click "Uninstall Selected".
+
+5. **To restore**: Click "Restore from Backup" and select the app from the list.
 
 ## Backups
-- Location: `Documents/AndroidDebloater/backups/<package>-<unix_ts>/`
-- Contents: APK or split APKs pulled via ADB
-- Restore: uses `adb install` or `adb install-multiple` automatically
 
-## Build from source
-Prereqs: Node.js 18+ (or 20+), Rust (stable), cargo
+- **Location**: `Documents/AndroidDebloater/backups/<package>-<unix_ts>/`
+- **Contents**: APK files or split APKs pulled via ADB
+- **Restore Process**: Uses `adb install` or `adb install-multiple` automatically
+- **Safety**: Always creates backups before uninstalling system apps
 
-Dev run (PowerShell):
-```pwsh
+## Building from Source
+
+### Prerequisites
+- Node.js 18+ (recommended: 20+)
+- Rust (stable)
+- Cargo
+
+### Development
+```bash
 npm install
 npm run tauri:dev
 ```
 
-Create installers (PowerShell):
-```pwsh
+### Build Installers
+```bash
 npm run tauri:build
 ```
 
-Linux build deps (reference):
-- libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev libsoup2.4-dev libglib2.0-dev libjavascriptcoregtk-4.0-dev
+### Linux Dependencies
+```bash
+sudo apt-get install libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev libsoup2.4-dev libglib2.0-dev libjavascriptcoregtk-4.0-dev
+```
 
-## Project structure
-- `src/` React UI (TypeScript)
-  - `App.tsx` main UI
-  - `components/RestoreModal.tsx` restore picker modal
-  - `api.ts` typed wrapper around Tauri invokes
-  - `types.ts` shared types
-- `src-tauri/` Rust backend
-  - `src/main.rs` commands: devices, packages, uninstall+backup, restore, update
-  - `tauri.conf.json` bundling (includes `platform-tools`);
-  - `icons/` app icons
-- `platform-tools/` bundled ADB used at runtime
+## Project Structure
 
-## How ADB is resolved
-The app only uses the bundled `platform-tools` from its resources (including Windows NSIS `_up_` layout). It does not rely on your system PATH.
+```
+src/                    # React UI (TypeScript)
+├── App.tsx            # Main UI component
+├── components/
+│   └── RestoreModal.tsx # Restore picker modal
+├── api.ts             # Tauri invoke wrapper
+├── types.ts           # Shared TypeScript types
+└── styles.css         # App styles
+
+src-tauri/             # Rust backend
+├── src/main.rs        # Tauri commands (devices, packages, etc.)
+├── tauri.conf.json    # Tauri configuration
+├── Cargo.toml         # Rust dependencies
+└── icons/             # App icons
+
+platform-tools/        # Bundled ADB tools
+```
 
 ## Troubleshooting
-- Device not detected:
-  - Ensure USB debugging is enabled; accept the authorization prompt.
-  - Try a different cable/port. On Windows, install OEM/Google USB drivers.
-- Restore says “No .apk files found”:
-  - Select the specific backup folder created by the app (not its parent).
-- ADB not found error:
-  - Make sure the `platform-tools` folder is included with the app (it is bundled in installers).
 
-## CI/CD
-GitHub Actions build and draft-release on tags like `v*` across Windows/macOS/Linux.
+### Device Not Detected
+- Ensure USB debugging is enabled and you've accepted the authorization prompt
+- Try a different USB cable or port
+- On Windows: Install OEM/Google USB drivers
+- Restart ADB: `adb kill-server && adb start-server`
+
+### Restore Issues
+- Select the specific backup folder created by the app (not its parent)
+- Ensure the APK files are intact in the backup directory
+
+### ADB Errors
+- Verify that the `platform-tools` folder is bundled with the app
+- For manual builds, ensure ADB is in your system PATH
+
+### Common ADB Commands
+If you need to troubleshoot manually:
+```bash
+adb devices                    # List connected devices
+adb shell pm list packages     # List all packages
+adb uninstall <package>        # Uninstall a package
+```
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and test thoroughly
+4. Submit a pull request
+
+### Development Setup
+See [Building from Source](#building-from-source) for setup instructions.
 
 ## License
-GPL‑3.0. See `LICENSE`.
+
+This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
-Removing system packages can affect device functionality. Research before removal and keep backups. Use at your own risk.
+
+⚠️ **Warning**: Removing system packages can affect device functionality and stability. Always research packages before removal and keep backups. Use this tool at your own risk. The developers are not responsible for any damage to your device or data loss.

@@ -9,7 +9,7 @@ on:
 jobs:
   frontend:
     name: Frontend build (Vite)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 

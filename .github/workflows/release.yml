@@ -42,7 +42,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
@@ -119,7 +119,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v8
@@ -131,9 +131,9 @@ jobs:
       - name: Generate SHA256 checksums
         run: |
           set -e
-          shopt -s nullglob
+          shopt -s globstar nullglob
           pushd release-assets > /dev/null
-          files=(*.exe *.msi *.deb *.rpm *.AppImage *.dmg *.app.zip)
+          files=(**/*.exe **/*.msi **/*.deb **/*.rpm **/*.AppImage **/*.dmg **/*.app.zip)
           if [ ${#files[@]} -gt 0 ]; then
             sha256sum "${files[@]}" > ../SHA256SUMS.txt
             echo "Generated SHA256SUMS.txt for ${#files[@]} files"
@@ -150,11 +150,11 @@ jobs:
           target_commitish: ${{ github.sha }}
           draft: true
           files: |
-            release-assets/*.exe
-            release-assets/*.msi
-            release-assets/*.deb
-            release-assets/*.rpm
-            release-assets/*.AppImage
-            release-assets/*.dmg
-            release-assets/*.app.zip
+            release-assets/**/*.exe
+            release-assets/**/*.msi
+            release-assets/**/*.deb
+            release-assets/**/*.rpm
+            release-assets/**/*.AppImage
+            release-assets/**/*.dmg
+            release-assets/**/*.app.zip
             SHA256SUMS.txt

@@ -11,7 +11,6 @@ jobs:
     name: Frontend build (Vite)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
 
       - name: Detect app directory
         id: detect
@@ -26,9 +25,8 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
@@ -46,11 +44,10 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-22.04
           - windows-latest
           - macos-latest
     steps:
-      - uses: actions/checkout@v7
 
       - name: Detect app directory
         id: detect
@@ -65,22 +62,22 @@ jobs:
             exit 1
           fi
 
-      - name: Install Linux deps (Tauri)
+      - name: Install Linux deps (Tauri v1)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             pkg-config \
             libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
+            libwebkit2gtk-4.0-dev \
             build-essential \
             libssl-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
-            libsoup-3.0-dev \
+            libsoup2.4-dev \
             libglib2.0-dev \
-            libjavascriptcoregtk-4.1-dev
+            libjavascriptcoregtk-4.0-dev
 
       - name: Install Windows deps (NSIS & WiX)
         if: runner.os == 'Windows'

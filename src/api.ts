@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/tauri';
-import type { DeviceInfo, BackupEntry } from './types';
+import type { DeviceInfo, BackupEntry, PackageInfo } from './types';
 
 export const api = {
   listDevices: () => invoke<DeviceInfo[]>('list_devices'),
-  listPackages: () => invoke<string[]>('list_packages'),
+  listPackages: () => invoke<PackageInfo[]>('list_packages'),
   uninstall: (pkg: string) => invoke<string>('uninstall_package', { package: pkg }),
   reboot: () => invoke('reboot_device'),
   checkUpdate: (current: string) => invoke<{ latest: string; outdated: boolean }>('check_update', { current }),

@@ -69,6 +69,12 @@ struct DeviceInfo {
   status: String,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PackageInfo {
+  pub package: String,
+  pub name: String,
+}
+
 fn backup_apk(app: &tauri::AppHandle, package: &str) -> Result<PathBuf, String> {
   let adb = resolve_adb_path(app)?;
 
@@ -188,8 +194,186 @@ fn list_devices(app: tauri::AppHandle) -> Result<Vec<DeviceInfo>, String> {
   Ok(devices)
 }
 
+fn get_known_package_name(pkg: &str) -> Option<&'static str> {
+  match pkg {
+    "com.google.android.marvin.talkback" => Some("Android Accessibility Suite"),
+    "com.google.android.accessibility.soundamplifier" => Some("Sound Amplifier"),
+    "com.google.audio.hearing.visualization.accessibility.scribe" => Some("Live Transcribe"),
+    "com.google.android.apps.accessibility.voiceaccess" => Some("Voice Access"),
+    "com.android.chrome" => Some("Google Chrome"),
+    "com.google.android.youtube" => Some("YouTube"),
+    "com.google.android.apps.youtube.music" => Some("YouTube Music"),
+    "com.google.android.gms" => Some("Google Play Services"),
+    "com.google.android.vending" => Some("Google Play Store"),
+    "com.google.android.googlequicksearchbox" => Some("Google App"),
+    "com.google.android.apps.maps" => Some("Google Maps"),
+    "com.google.android.gm" => Some("Gmail"),
+    "com.google.android.apps.docs" => Some("Google Drive"),
+    "com.google.android.apps.photos" => Some("Google Photos"),
+    "com.google.android.calendar" => Some("Google Calendar"),
+    "com.google.android.contacts" => Some("Google Contacts"),
+    "com.google.android.deskclock" => Some("Google Clock"),
+    "com.google.android.apps.messaging" => Some("Google Messages"),
+    "com.google.android.dialer" => Some("Phone by Google"),
+    "com.google.android.inputmethod.latin" => Some("Gboard"),
+    "com.google.android.keep" => Some("Google Keep"),
+    "com.google.android.videos" => Some("Google TV"),
+    "com.google.android.apps.tachyon" => Some("Google Meet"),
+    "com.google.android.apps.walletnfcrel" => Some("Google Wallet"),
+    "com.google.android.tts" => Some("Speech Recognition & Synthesis"),
+    "com.google.android.apps.nbu.files" => Some("Files by Google"),
+    "com.google.android.calculator" => Some("Google Calculator"),
+    "com.android.settings" => Some("Settings"),
+    "com.android.camera" => Some("Camera"),
+    "com.android.phone" => Some("Phone"),
+    "com.android.dialer" => Some("Dialer"),
+    "com.android.contacts" => Some("Contacts"),
+    "com.android.mms" => Some("Messaging"),
+    "com.android.calculator2" => Some("Calculator"),
+    "com.android.deskclock" => Some("Clock"),
+    "com.android.gallery3d" => Some("Gallery"),
+    "com.android.bluetooth" => Some("Bluetooth"),
+    "com.android.stk" => Some("SIM Toolkit"),
+    "com.android.providers.downloads.ui" => Some("Downloads"),
+    "com.android.printspooler" => Some("Print Spooler"),
+    "com.sec.android.app.sbrowser" => Some("Samsung Internet"),
+    "com.sec.android.app.popupcalculator" => Some("Samsung Calculator"),
+    "com.sec.android.app.clockpackage" => Some("Samsung Clock"),
+    "com.sec.android.app.voicenote" => Some("Samsung Voice Recorder"),
+    "com.sec.android.gallery3d" => Some("Samsung Gallery"),
+    "com.sec.android.app.myfiles" => Some("Samsung My Files"),
+    "com.samsung.android.bixby.agent" => Some("Bixby Voice"),
+    "com.samsung.android.bixby.wakeup" => Some("Bixby Wakeup"),
+    "com.samsung.android.app.spage" => Some("Samsung Free"),
+    "com.samsung.android.game.gamehome" => Some("Gaming Hub"),
+    "com.samsung.android.app.notes" => Some("Samsung Notes"),
+    "com.samsung.android.email.provider" => Some("Samsung Email"),
+    "com.samsung.android.calendar" => Some("Samsung Calendar"),
+    "com.samsung.android.messaging" => Some("Samsung Messages"),
+    "com.samsung.android.pay" => Some("Samsung Pay"),
+    "com.samsung.android.health" => Some("Samsung Health"),
+    "com.samsung.android.wearable.app" => Some("Galaxy Wearable"),
+    "com.miui.securitycenter" => Some("Xiaomi Security"),
+    "com.miui.calculator" => Some("Mi Calculator"),
+    "com.miui.gallery" => Some("Mi Gallery"),
+    "com.miui.player" => Some("Mi Music"),
+    "com.miui.videoplayer" => Some("Mi Video"),
+    "com.miui.cleanmaster" => Some("Cleaner"),
+    "com.miui.weather2" => Some("Mi Weather"),
+    "com.miui.notes" => Some("Mi Notes"),
+    "com.mi.android.globalminstore" => Some("GetApps"),
+    "com.xiaomi.midrop" => Some("ShareMe"),
+    "com.facebook.katana" => Some("Facebook"),
+    "com.facebook.system" => Some("Facebook App Installer"),
+    "com.facebook.appmanager" => Some("Facebook App Manager"),
+    "com.facebook.services" => Some("Facebook Services"),
+    "com.instagram.android" => Some("Instagram"),
+    "com.whatsapp" => Some("WhatsApp"),
+    "com.twitter.android" => Some("X (Twitter)"),
+    "com.zhiliaoapp.musically" => Some("TikTok"),
+    "com.ss.android.ugc.trill" => Some("TikTok"),
+    "com.netflix.mediaclient" => Some("Netflix"),
+    "com.spotify.music" => Some("Spotify"),
+    "com.amazon.mShop.android.shopping" => Some("Amazon Shopping"),
+    "com.amazon.mp3" => Some("Amazon Music"),
+    "com.amazon.kindle" => Some("Amazon Kindle"),
+    "com.microsoft.office.outlook" => Some("Microsoft Outlook"),
+    "com.microsoft.office.onedrive" => Some("Microsoft OneDrive"),
+    "com.microsoft.skydrive" => Some("OneDrive"),
+    "com.microsoft.office.officehubrow" => Some("Microsoft 365"),
+    _ => None,
+  }
+}
+
+fn humanize_package_name(pkg: &str) -> String {
+  let parts: Vec<&str> = pkg.split('.').filter(|s| !s.is_empty()).collect();
+  if parts.is_empty() {
+    return pkg.to_string();
+  }
+
+  let ignore_prefixes = [
+    "com", "org", "net", "io", "gov", "edu", "android", "sec", "samsung", "miui", "google",
+  ];
+  let meaningful: Vec<&str> = parts
+    .iter()
+    .copied()
+    .filter(|p| !ignore_prefixes.contains(&p.to_lowercase().as_str()))
+    .collect();
+
+  let selected = if meaningful.is_empty() { parts } else { meaningful };
+
+  let mut words = Vec::new();
+  for seg in selected {
+    let mut current_word = String::new();
+    for ch in seg.chars() {
+      if ch == '_' || ch == '-' || ch == '.' {
+        if !current_word.is_empty() {
+          words.push(current_word);
+          current_word = String::new();
+        }
+      } else if ch.is_uppercase() && !current_word.is_empty() {
+        words.push(current_word);
+        current_word = String::new();
+        current_word.push(ch);
+      } else {
+        current_word.push(ch);
+      }
+    }
+    if !current_word.is_empty() {
+      words.push(current_word);
+    }
+  }
+
+  words
+    .into_iter()
+    .map(|w| {
+      let mut chars = w.chars();
+      match chars.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + chars.as_str().to_lowercase().as_str(),
+      }
+    })
+    .collect::<Vec<String>>()
+    .join(" ")
+}
+
+fn get_adb_labels(app: &tauri::AppHandle) -> std::collections::HashMap<String, String> {
+  let mut labels = std::collections::HashMap::new();
+  let Ok(adb) = resolve_adb_path(app) else { return labels; };
+  let Ok(output) = make_cmd(Command::new(&adb))
+    .args(["shell", "dumpsys", "package"])
+    .stdout(Stdio::piped())
+    .output() else { return labels; };
+
+  let stdout = String::from_utf8_lossy(&output.stdout);
+  let mut current_pkg: Option<String> = None;
+
+  for line in stdout.lines() {
+    let trimmed = line.trim();
+    if trimmed.starts_with("Package [") {
+      if let Some(end) = trimmed.find(']') {
+        current_pkg = Some(trimmed[9..end].to_string());
+      }
+    } else if let Some(pkg) = &current_pkg {
+      if trimmed.starts_with("application-label:") || trimmed.starts_with("application-label-en:") {
+        if let Some(first_quote) = trimmed.find('\'') {
+          if let Some(last_quote) = trimmed.rfind('\'') {
+            if last_quote > first_quote {
+              let label = &trimmed[first_quote + 1..last_quote];
+              if !label.is_empty() {
+                labels.insert(pkg.clone(), label.to_string());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  labels
+}
+
 #[tauri::command]
-fn list_packages(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+fn list_packages(app: tauri::AppHandle) -> Result<Vec<PackageInfo>, String> {
   let adb = resolve_adb_path(&app)?;
   let output = make_cmd(Command::new(&adb))
     .args(["shell", "pm", "list", "packages"])
@@ -197,12 +381,28 @@ fn list_packages(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     .output()
     .map_err(|e| format!("Failed to run adb ({}): {}", adb, e))?;
   let stdout = String::from_utf8_lossy(&output.stdout);
-  let mut pkgs = Vec::new();
+  let mut raw_pkgs = Vec::new();
   for line in stdout.lines() {
     if let Some((_, name)) = line.split_once(":") {
-      pkgs.push(name.trim().to_string());
+      raw_pkgs.push(name.trim().to_string());
     }
   }
+
+  let adb_labels = get_adb_labels(&app);
+
+  let mut pkgs = Vec::new();
+  for pkg in raw_pkgs {
+    let name = if let Some(known) = get_known_package_name(&pkg) {
+      known.to_string()
+    } else if let Some(adb_label) = adb_labels.get(&pkg) {
+      adb_label.clone()
+    } else {
+      humanize_package_name(&pkg)
+    };
+    pkgs.push(PackageInfo { package: pkg, name });
+  }
+
+  pkgs.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
   Ok(pkgs)
 }
 
@@ -317,9 +517,9 @@ fn main() {
       list_packages,
       uninstall_package,
       reboot_device,
-  check_update,
-  restore_from_backup,
-  get_backups_latest
+      check_update,
+      restore_from_backup,
+      get_backups_latest
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

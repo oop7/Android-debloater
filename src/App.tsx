@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { open as openDialog } from '@tauri-apps/api/dialog';
 import { api } from './api';
-import type { DeviceInfo, BackupEntry } from './types';
+import type { DeviceInfo, BackupEntry, PackageInfo } from './types';
+import { getFriendlyName } from './appNames';
 import { RestoreModal } from './components/RestoreModal';
 
 export default function App() {
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
-  const [packages, setPackages] = useState<string[]>([]);
+  const [packages, setPackages] = useState<PackageInfo[]>([]);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState('');
@@ -19,9 +20,31 @@ export default function App() {
   const [loadingBackups, setLoadingBackups] = useState(false);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return packages.filter(p => p.toLowerCase().includes(q));
+    const q = query.toLowerCase().trim();
+    if (!q) return packages;
+    return packages.filter(
+      p => p.name.toLowerCase().includes(q) || p.package.toLowerCase().includes(q)
+    );
   }, [packages, query]);
+
+  const isAllFilteredSelected = useMemo(() => {
+    if (filtered.length === 0) return false;
+    return filtered.every(p => selected.has(p.package));
+  }, [filtered, selected]);
+
+  function toggleSelectAllFiltered() {
+    const next = new Set(selected);
+    if (isAllFilteredSelected) {
+      for (const p of filtered) {
+        next.delete(p.package);
+      }
+    } else {
+      for (const p of filtered) {
+        next.add(p.package);
+      }
+    }
+    setSelected(next);
+  }
 
   async function refreshDevices() {
     try {
@@ -35,10 +58,19 @@ export default function App() {
   async function scanPackages() {
     setStatus('Scanning packages...');
     try {
-  const pkgs = await api.listPackages();
-      setPackages(pkgs);
+      const res = await api.listPackages();
+      const formatted: PackageInfo[] = res.map((item: any) => {
+        if (typeof item === 'string') {
+          return { package: item, name: getFriendlyName(item) };
+        }
+        return {
+          package: item.package,
+          name: getFriendlyName(item.package, item.name),
+        };
+      });
+      setPackages(formatted);
       setSelected(new Set());
-      setStatus(`Found ${pkgs.length} packages`);
+      setStatus(`Found ${formatted.length} packages`);
     } catch (e: any) {
       setStatus(`Error listing packages: ${e}`);
     }
@@ -49,11 +81,12 @@ export default function App() {
       alert('No packages selected.');
       return;
     }
-    if (!confirm(`Uninstall ${selected.size} packages? This cannot be undone.`)) return;
+    const count = selected.size;
+    if (!confirm(`Uninstall ${count} app${count === 1 ? '' : 's'} selected? This cannot be undone.`)) return;
     setStatus('Uninstalling...');
     for (const pkg of selected) {
       try {
-  const result = await api.uninstall(pkg);
+        const result = await api.uninstall(pkg);
         if (result.includes('Success')) {
           setStatus(prev => `${prev}\n${pkg} uninstalled.`);
         } else {
@@ -63,15 +96,14 @@ export default function App() {
         setStatus(prev => `${prev}\nError ${pkg}: ${e}`);
       }
     }
-  // Clear search so the full list shows again
-  setQuery('');
-  await scanPackages();
+    setQuery('');
+    await scanPackages();
   }
 
   async function reboot() {
     if (!confirm('Reboot connected device now?')) return;
     try {
-  await api.reboot();
+      await api.reboot();
       setStatus('Device rebooting...');
     } catch (e: any) {
       setStatus(`Reboot failed: ${e}`);
@@ -81,7 +113,7 @@ export default function App() {
   async function checkUpdates() {
     setUpdateMsg('Checking updates...');
     try {
-  const res = await api.checkUpdate(version);
+      const res = await api.checkUpdate(version);
       if (res.outdated) {
         if (confirm(`New version ${res.latest} available. Open release page?`)) {
           await open('https://github.com/oop7/Android-debloater/releases');
@@ -98,13 +130,12 @@ export default function App() {
   async function restoreFromBackup() {
     try {
       setRestoring(true);
-  // Show modal immediately and load backups asynchronously
-  setBackups([]);
-  setShowRestore(true);
-  setLoadingBackups(true);
-  const list = await api.getBackupsLatest();
-  setBackups(list);
-  setLoadingBackups(false);
+      setBackups([]);
+      setShowRestore(true);
+      setLoadingBackups(true);
+      const list = await api.getBackupsLatest();
+      setBackups(list);
+      setLoadingBackups(false);
     } catch (e: any) {
       setStatus(prev => `${prev}\nRestore failed: ${e}`);
     } finally {
@@ -115,8 +146,9 @@ export default function App() {
   async function doRestore(entry: BackupEntry) {
     try {
       setShowRestore(false);
-      setStatus(`Restoring ${entry.package} from backup...`);
-  const result = await api.restoreFromDir(entry.dir);
+      const friendly = getFriendlyName(entry.package);
+      setStatus(`Restoring ${friendly} (${entry.package}) from backup...`);
+      const result = await api.restoreFromDir(entry.dir);
       setStatus(prev => `${prev}\n${result}`);
     } catch (e: any) {
       setStatus(prev => `${prev}\nRestore failed: ${e}`);
@@ -135,10 +167,10 @@ export default function App() {
         <button onClick={checkUpdates}>Check for Updates</button>
       </header>
 
-      <section className="devices">
-        <h3>Connected Devices</h3>
+      <section className="devices" aria-labelledby="devices-heading">
+        <h3 id="devices-heading">Connected Devices</h3>
         <div className="row">
-          <ul className="device-list">
+          <ul className="device-list" aria-label="Connected Devices List">
             {devices.length === 0 ? (
               <li>No devices connected</li>
             ) : (
@@ -155,7 +187,8 @@ export default function App() {
         <div className="row">
           <input
             type="text"
-            placeholder="Search packages..."
+            placeholder="Search packages by name or ID..."
+            aria-label="Search packages by name or package ID"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -167,25 +200,74 @@ export default function App() {
         </div>
       </section>
 
-      <section className="packages">
-        <div className="row between">
-          <span>{packages.length} packages found</span>
-          <button onClick={uninstallSelected}>Uninstall Selected</button>
+      <section className="packages" aria-labelledby="packages-summary">
+        <div className="row between pkg-header-bar">
+          <div className="pkg-summary" id="packages-summary" aria-live="polite">
+            <span>{packages.length} packages found</span>
+            {selected.size > 0 && (
+              <span className="selected-badge">
+                {selected.size} app{selected.size === 1 ? '' : 's'} selected
+              </span>
+            )}
+          </div>
+          <div className="row action-buttons">
+            {filtered.length > 0 && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={toggleSelectAllFiltered}
+                aria-label={isAllFilteredSelected ? 'Deselect all filtered packages' : 'Select all filtered packages'}
+              >
+                {isAllFilteredSelected ? 'Deselect Filtered' : 'Select Filtered'}
+              </button>
+            )}
+            {selected.size > 0 && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setSelected(new Set())}
+                aria-label="Clear all package selections"
+              >
+                Clear Selection
+              </button>
+            )}
+            <button
+              onClick={uninstallSelected}
+              disabled={selected.size === 0}
+              className="btn-danger"
+              aria-label={selected.size > 0 ? `Uninstall ${selected.size} selected app${selected.size === 1 ? '' : 's'}` : 'Uninstall selected apps'}
+            >
+              {selected.size > 0
+                ? `Uninstall (${selected.size} app${selected.size === 1 ? '' : 's'} selected)`
+                : 'Uninstall Selected'}
+            </button>
+          </div>
         </div>
-        <ul className="pkg-list">
-          {filtered.map(pkg => (
-            <li key={pkg} className="pkg-item" onContextMenu={async (e) => { e.preventDefault(); await open(`https://www.google.com/search?q=${encodeURIComponent(pkg + ' android package info')}`); }}>
-              <label>
+        <ul className="pkg-list" aria-label="Installed Packages List">
+          {filtered.map(item => (
+            <li
+              key={item.package}
+              className="pkg-item"
+              onContextMenu={async (e) => {
+                e.preventDefault();
+                await open(`https://www.google.com/search?q=${encodeURIComponent(item.name + ' ' + item.package + ' android package info')}`);
+              }}
+            >
+              <label className="pkg-label">
                 <input
                   type="checkbox"
-                  checked={selected.has(pkg)}
+                  checked={selected.has(item.package)}
                   onChange={(e) => {
                     const next = new Set(selected);
-                    if (e.target.checked) next.add(pkg); else next.delete(pkg);
+                    if (e.target.checked) next.add(item.package); else next.delete(item.package);
                     setSelected(next);
                   }}
+                  aria-label={`${item.name} (${item.package})`}
                 />
-                <span>{pkg}</span>
+                <div className="pkg-details">
+                  <span className="pkg-name">{item.name}</span>
+                  <span className="pkg-id">{item.package}</span>
+                </div>
               </label>
             </li>
           ))}
@@ -208,7 +290,7 @@ export default function App() {
         }}
       />
 
-      <footer className="status">
+      <footer className="status" aria-live="polite">
         <div>{updateMsg}</div>
         <pre className="log">{status}</pre>
       </footer>

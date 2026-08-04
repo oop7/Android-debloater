@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: linux
           - os: windows-latest
             target: windows
@@ -25,6 +25,7 @@ jobs:
             target: macos
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v7
 
       - name: Detect app directory
         id: detect
@@ -39,27 +40,28 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
-      - name: Install Linux deps (Tauri v1)
+      - name: Install Linux deps (Tauri)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             pkg-config \
             libgtk-3-dev \
-            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
             build-essential \
             libssl-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
-            libsoup2.4-dev \
+            libsoup-3.0-dev \
             libglib2.0-dev \
-            libjavascriptcoregtk-4.0-dev \
+            libjavascriptcoregtk-4.1-dev \
             rpm
 
       - uses: dtolnay/rust-toolchain@stable
@@ -98,6 +100,7 @@ jobs:
           fi
 
       - name: Upload artifacts
+        uses: actions/upload-artifact@v7
         with:
           name: app-bundles-${{ matrix.target }}
           path: |
@@ -117,6 +120,7 @@ jobs:
       contents: write
     steps:
       - name: Download all build artifacts
+        uses: actions/download-artifact@v8
         with:
           pattern: app-bundles-*
           path: release-assets
@@ -137,6 +141,7 @@ jobs:
           popd > /dev/null
 
       - name: Create draft release and attach assets
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}

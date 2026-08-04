@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version for the release (e.g. 1.0.0) – do not include the v prefix'
+        description: 'Version for the release (e.g. 2.5.6) – do not include the v prefix'
         required: true
         type: string
 
@@ -99,26 +99,28 @@ jobs:
             echo "No .app bundle found to zip"
           fi
 
-      - name: Upload artifacts
+      - name: Upload installer artifacts only
         uses: actions/upload-artifact@v7
         with:
           name: app-bundles-${{ matrix.target }}
           path: |
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.exe
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.msi
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.deb
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.rpm
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.AppImage
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.dmg
-            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/**/*.app.zip
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/nsis/*.exe
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/msi/*.msi
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/deb/*.deb
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/rpm/*.rpm
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/appimage/*.AppImage
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/dmg/*.dmg
+            ${{ env.APP_DIR }}/src-tauri/target/release/bundle/macos/*.app.zip
 
   release:
     name: Create GitHub Release (draft)
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v8
         with:
@@ -129,9 +131,9 @@ jobs:
       - name: Generate SHA256 checksums
         run: |
           set -e
-          shopt -s globstar nullglob
+          shopt -s nullglob
           pushd release-assets > /dev/null
-          files=(**/*.exe **/*.msi **/*.deb **/*.rpm **/*.AppImage **/*.dmg **/*.app.zip)
+          files=(*.exe *.msi *.deb *.rpm *.AppImage *.dmg *.app.zip)
           if [ ${#files[@]} -gt 0 ]; then
             sha256sum "${files[@]}" > ../SHA256SUMS.txt
             echo "Generated SHA256SUMS.txt for ${#files[@]} files"
@@ -145,13 +147,14 @@ jobs:
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
           draft: true
           files: |
-            release-assets/**/*.exe
-            release-assets/**/*.msi
-            release-assets/**/*.deb
-            release-assets/**/*.rpm
-            release-assets/**/*.AppImage
-            release-assets/**/*.dmg
-            release-assets/**/*.app.zip
+            release-assets/*.exe
+            release-assets/*.msi
+            release-assets/*.deb
+            release-assets/*.rpm
+            release-assets/*.AppImage
+            release-assets/*.dmg
+            release-assets/*.app.zip
             SHA256SUMS.txt

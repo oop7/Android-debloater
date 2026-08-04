@@ -1,14 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/1",
   "package": {
-    "productName": "Android Debloater",
-    "version": "0.1.0"
+    "productName": "Android-debloater-rs",
+    "version": "2.5.6"
   },
   "build": {
     "beforeDevCommand": "vite --host",
     "beforeBuildCommand": "vite build",
-  "devPath": "http://localhost:5173",
-  "distDir": "../dist"
+    "devPath": "http://localhost:5173",
+    "distDir": "../dist"
   },
   "tauri": {
     "allowlist": {
@@ -22,16 +22,16 @@
     },
     "windows": [
       {
-        "title": "Android Debloater",
+        "title": "Android-debloater-rs",
         "width": 900,
         "height": 700,
         "resizable": true
       }
     ],
-  "bundle": {
+    "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.example.android-debloater",
+      "identifier": "com.oop7.android-debloater-rs",
       "resources": ["../platform-tools"],
       "icon": [
         "icons/icon.ico",

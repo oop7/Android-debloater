@@ -1,6 +1,6 @@
 [package]
-name = "new-android-debloater"
-version = "0.1.0"
+name = "android-debloater-rs"
+version = "2.5.6"
 description = "Android Debloater rewritten with Tauri"
 authors = ["You"]
 license = "GPL-3.0"

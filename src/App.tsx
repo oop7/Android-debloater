@@ -12,7 +12,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState('');
-  const [version] = useState('2.0.0');
+  const [version] = useState('2.5.6');
   const [updateMsg, setUpdateMsg] = useState('');
   const [restoring, setRestoring] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
@@ -162,7 +162,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Android Debloater</h1>
+        <h1>Android-debloater-rs</h1>
         <div className="spacer" />
         <button onClick={checkUpdates}>Check for Updates</button>
       </header>
